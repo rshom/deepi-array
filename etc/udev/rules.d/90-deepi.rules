@@ -1,0 +1,4 @@
+SUBSYSTEM=="net", ATTR{address}=="00:22:82:ff:ff:01", NAME="eth1"
+SUBSYSTEM=="net", ATTR{address}=="00:22:82:ff:ff:02", NAME="eth2"
+SUBSYSTEM=="net", ATTR{address}=="00:22:82:ff:ff:03", NAME="eth3"
+SUBSYSTEM=="net", ATTR{address}=="00:22:82:ff:ff:04", NAME="eth4"
