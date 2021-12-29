@@ -14,7 +14,8 @@
    [DEEPi-OS project](https://github.com/rshom/deepi-os).
    
 > NOTE: currently, you have to use Buster over the newest version
-> because the picamera python package does not work with Bullseye.
+> because the picamera python package does not work with
+> Bullseye. Except a solution in the future.
 
 ```
 git clone https://github.com/rshom/deepi-os
@@ -46,7 +47,8 @@ gateway 10.0.1X.1
 ```
 
 > NOTE: Need to use high quality USB cables. This needs to be
-> quanitified or exampled in some way.
+> quanitified or exampled in some way because it is more than just
+> "good".
 
 ## Array RPi4 ##
 
@@ -65,7 +67,34 @@ sudo reboot now
 
 2. Add RPiZ Nodes as ethernet devices.
 
-3. Add IP forwarding 
+```
+# /etc/udev/rules.d/90-usbpi.rules
+SUBSYSTEM=="net", ATTR{address}=="00:22:82:ff:ff:01", NAME="usb1"
+SUBSYSTEM=="net", ATTR{address}=="00:22:82:ff:ff:02", NAME="usb2"
+SUBSYSTEM=="net", ATTR{address}=="00:22:82:ff:ff:03", NAME="usb3"
+SUBSYSTEM=="net", ATTR{address}=="00:22:82:ff:ff:04", NAME="usb4"
+```
+
+3. Set the new interfaces to static ip addresses on seperate subnets
+   by adding the following code to `/etc/dhcpcd.conf`.
+
+```
+interface usb1
+static ip_address=10.0.11.1/24
+	
+interface usb2
+static ip_address=10.0.12.1/24
+	
+interface usb3
+static ip_address=10.0.13.1/24
+
+interface usb4
+static ip_address=10.0.14.1/24
+```
+
+
+
+4. Add IP forwarding 
 
 ## Router ##
 
