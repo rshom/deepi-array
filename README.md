@@ -29,7 +29,7 @@ sudo reboot now
    for each.
 
 ```
-sudo sed 's/rootwait/rootwait modules-load=dwc2,g_ether g_ether.host_addr=00:22:82:ff:ff:0X g_ether.dev_addr=00:22:82:ff:ff:1X/' /boot/cmdline.txt
+sudo sed -i 's/rootwait/rootwait modules-load=dwc2,g_ether g_ether.host_addr=00:22:82:ff:ff:0X g_ether.dev_addr=00:22:82:ff:ff:1X/' /boot/cmdline.txt
 echo "dtoverlay=dwc2" | sudo tee -a /boot/config.txt
 ```
 
