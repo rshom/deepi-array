@@ -50,6 +50,17 @@ gateway 10.0.1X.1
 > quanitified or exampled in some way because it is more than just
 > "good".
 
+Tell all traffic to go through the RPi4 first.
+
+```
+sudo ip route del default
+sudo ip route add default via 10.0.1x.1
+```
+
+* [ ] traffic should actually try for wifi first, but if that does not
+      work it, it should use the usb
+
+
 ## Array RPi4 ##
 
 1. Set up new RPi4 using Raspbian Pi OS and do the following from the
