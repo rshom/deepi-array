@@ -98,7 +98,10 @@ static ip_address=10.0.14.1/24
 
 ## Router ##
 
-> TODO: try to get router to forward IP
+
+  * [ ] Plug into a travel router. 
+  * [ ] Set up static IPs
+
 
 ## Topside RPi4 ##
 
@@ -106,7 +109,16 @@ static ip_address=10.0.14.1/24
 
 2. Add IP forwarding
 
+Assuming the IP of the Array RPi4 is `192.168.8.111` on the router.
+
+```
+sudo ip route add 10.0.11.0/24 via 192.168.8.111 dev eth0
+sudo ip route add 10.0.12.0/24 via 192.168.8.111 dev eth0
+sudo ip route add 10.0.13.0/24 via 192.168.8.111 dev eth0
+sudo ip route add 10.0.14.0/24 via 192.168.8.111 dev eth0
+```
+
 ## References ##
 
   * http://raspberryjamberlin.de/zero360-part-2-connecting-via-otg-a-cluster-of-raspberry-pi-zeros-to-a-pi-3/
-
+  * https://forums.raspberrypi.com/viewtopic.php?t=217320
