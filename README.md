@@ -2,8 +2,11 @@
 > Instructions for setting up an array
 
 ## Overview ##
-  
 
+  * 4x RPiZ nodes
+  * Array RPi4
+  * Router
+  * Topside RPi4
   
 ## RPiZ Nodes ##
 
@@ -47,6 +50,17 @@ gateway 10.0.1X.1
 > quanitified or exampled in some way because it is more than just
 > "good".
 
+Tell all traffic to go through the RPi4 first.
+
+```
+sudo ip route del default
+sudo ip route add default via 10.0.1x.1
+```
+
+* [ ] traffic should actually try for wifi first, but if that does not
+      work it, it should use the usb
+
+
 ## Array RPi4 ##
 
 1. Set up new RPi4 using Raspbian Pi OS and do the following from the
@@ -66,44 +80,39 @@ sudo reboot now
 
 ```
 # /etc/udev/rules.d/90-usbpi.rules
-SUBSYSTEM=="net", ATTR{address}=="00:22:82:ff:ff:01", NAME="eth1"
-SUBSYSTEM=="net", ATTR{address}=="00:22:82:ff:ff:02", NAME="eth2"
-SUBSYSTEM=="net", ATTR{address}=="00:22:82:ff:ff:03", NAME="eth3"
-SUBSYSTEM=="net", ATTR{address}=="00:22:82:ff:ff:04", NAME="eth4"
+SUBSYSTEM=="net", ATTR{address}=="00:22:82:ff:ff:01", NAME="usb1"
+SUBSYSTEM=="net", ATTR{address}=="00:22:82:ff:ff:02", NAME="usb2"
+SUBSYSTEM=="net", ATTR{address}=="00:22:82:ff:ff:03", NAME="usb3"
+SUBSYSTEM=="net", ATTR{address}=="00:22:82:ff:ff:04", NAME="usb4"
 ```
 
 3. Set the new interfaces to static ip addresses on seperate subnets
    by adding the following code to `/etc/dhcpcd.conf`.
 
 ```
-interface eth1
+interface usb1
 static ip_address=10.0.11.1/24
 	
-interface eth2
+interface usb2
 static ip_address=10.0.12.1/24
 	
-interface eth3
+interface usb3
 static ip_address=10.0.13.1/24
 
-interface eth4
+interface usb4
 static ip_address=10.0.14.1/24
 ```
 
-4. Add IP forwarding by modifying `/etc/sysctl.conf` and uncomment line.
 
-```
-net.ipv4.ip_forward=1
-```
 
-or run
-
-```
-sudo sysctl net.ipv4.ip_forward=1
-```
+4. Add IP forwarding 
 
 ## Router ##
 
-> TODO: try to get router to forward IP
+
+  * [ ] Plug into a travel router. 
+  * [ ] Set up static IPs
+
 
 ## Topside RPi4 ##
 
@@ -111,15 +120,16 @@ sudo sysctl net.ipv4.ip_forward=1
 
 2. Add IP forwarding
 
-https://learn.sparkfun.com/tutorials/setting-up-a-raspberry-pi-3-as-an-access-point/enable-packet-forwarding
+Assuming the IP of the Array RPi4 is `192.168.8.111` on the router.
 
-https://forums.raspberrypi.com/viewtopic.php?t=170206
-
-https://raspberrypi.stackexchange.com/questions/120387/pass-traffic-from-one-network-interface-to-another/120398#120398
-
-
+```
+sudo ip route add 10.0.11.0/24 via 192.168.8.111 dev eth0
+sudo ip route add 10.0.12.0/24 via 192.168.8.111 dev eth0
+sudo ip route add 10.0.13.0/24 via 192.168.8.111 dev eth0
+sudo ip route add 10.0.14.0/24 via 192.168.8.111 dev eth0
+```
 
 ## References ##
 
   * http://raspberryjamberlin.de/zero360-part-2-connecting-via-otg-a-cluster-of-raspberry-pi-zeros-to-a-pi-3/
-
+  * https://forums.raspberrypi.com/viewtopic.php?t=217320
