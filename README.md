@@ -33,7 +33,7 @@ sudo sed -i 's/rootwait/rootwait modules-load=dwc2,g_ether g_ether.host_addr=00:
 echo "dtoverlay=dwc2" | sudo tee -a /boot/config.txt
 ```
 
-Set static IP and allow hotplug
+3. Set static IP and allow hotplug
 
 ```
 # /etc/network/interfaces.d/usb0
@@ -50,16 +50,18 @@ gateway 10.0.1X.1
 > quanitified or exampled in some way because it is more than just
 > "good".
 
-Tell all traffic to go through the RPi4 first.
+4. Set up ip routing table.
 
 ```
-sudo ip route del default
-sudo ip route add default via 10.0.1x.1
+# /lib/dhcpcd/dhcpcd-hooks/40-route
+ip route replace 192.168.8.0/24 dev usb0 via 10.0.1X.1
+ip route replace 10.0.11.0/24 dev usb0 via 10.0.1X.1
+ip route replace 10.0.12.0/24 dev usb0 via 10.0.1X.1
+ip route replace 10.0.13.0/24 dev usb0 via 10.0.1X.1
+ip route replace 10.0.14.0/24 dev usb0 via 10.0.1X.1
+ip route replace default dev wlan0
 ```
-
-* [ ] traffic should actually try for wifi first, but if that does not
-      work it, it should use the usb
-
+> NOTE: IP routing order is from most to least specific.
 
 ## Array RPi4 ##
 
@@ -75,6 +77,7 @@ cd deepi-os
 sudo sh ./setup.sh
 sudo reboot now
 ```
+
 
 2. Add RPiZ Nodes as ethernet devices.
 
@@ -107,6 +110,18 @@ static ip_address=10.0.14.1/24
 
 4. Add IP forwarding 
 
+5. Set up ip routing table.
+
+```
+# /lib/dhcpcd/dhcpcd-hooks/40-route
+ip route replace 192.168.8.0/24 dev eth0
+ip route replace 10.0.11.0/24 dev usb0
+ip route replace 10.0.12.0/24 dev usb0
+ip route replace 10.0.13.0/24 dev usb0
+ip route replace 10.0.14.0/24 dev usb0
+ip route replace default dev wlan0
+```
+
 ## Router ##
 
 
@@ -120,13 +135,16 @@ static ip_address=10.0.14.1/24
 
 2. Add IP forwarding
 
-Assuming the IP of the Array RPi4 is `192.168.8.111` on the router.
+5. Set up ip routing table.
 
 ```
-sudo ip route add 10.0.11.0/24 via 192.168.8.111 dev eth0
-sudo ip route add 10.0.12.0/24 via 192.168.8.111 dev eth0
-sudo ip route add 10.0.13.0/24 via 192.168.8.111 dev eth0
-sudo ip route add 10.0.14.0/24 via 192.168.8.111 dev eth0
+# /lib/dhcpcd/dhcpcd-hooks/40-route
+ip route replace 192.168.8.0/24 dev eth0
+ip route replace 10.0.11.0/24 via 192.168.8.111
+ip route replace 10.0.12.0/24 via 192.168.8.111
+ip route replace 10.0.13.0/24 via 192.168.8.111
+ip route replace 10.0.14.0/24 via 192.168.8.111
+ip route replace default dev wlan0
 ```
 
 ## References ##
