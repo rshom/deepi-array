@@ -59,7 +59,6 @@ ip route replace 10.0.11.0/24 dev usb0 via 10.0.1X.1
 ip route replace 10.0.12.0/24 dev usb0 via 10.0.1X.1
 ip route replace 10.0.13.0/24 dev usb0 via 10.0.1X.1
 ip route replace 10.0.14.0/24 dev usb0 via 10.0.1X.1
-ip route replace default dev wlan0
 ```
 > NOTE: IP routing order is from most to least specific.
 
@@ -119,7 +118,6 @@ ip route replace 10.0.11.0/24 dev usb0
 ip route replace 10.0.12.0/24 dev usb0
 ip route replace 10.0.13.0/24 dev usb0
 ip route replace 10.0.14.0/24 dev usb0
-ip route replace default dev wlan0
 ```
 
 ## Router ##
@@ -144,7 +142,6 @@ ip route replace 10.0.11.0/24 via 192.168.8.111
 ip route replace 10.0.12.0/24 via 192.168.8.111
 ip route replace 10.0.13.0/24 via 192.168.8.111
 ip route replace 10.0.14.0/24 via 192.168.8.111
-ip route replace default dev wlan0
 ```
 
 ## References ##

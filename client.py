@@ -47,29 +47,39 @@ if __name__=='__main__':
     import cv2                                 
     feed1 = FeedSocket('10.0.11.2',8000)
     feed2 = FeedSocket('10.0.12.2',8000)
+    feed3 = FeedSocket('10.0.12.3',8000)
+    feed4 = FeedSocket('10.0.12.4',8000)
+    
     print("Starting")
     feed1.start()
     feed2.start()
+    feed3.start()
+    feed4.start()
     print("Ready")
     stereo = cv2.StereoBM_create()
     try:
         while True:
             img1 = cv2.imdecode(feed1.frame,1)
             img2 = cv2.imdecode(feed2.frame,1)
-            # img3 = cv2.imdecode(feed1.frame,1)
-            # img4 = cv2.imdecode(feed2.frame,1)
+            img3 = cv2.imdecode(feed3.frame,1)
+            img4 = cv2.imdecode(feed4.frame,1)
+
+            gray1 = cv2.cvtColor(img1,cv2.COLOR_BGR2GRAY)
+            gray2 = cv2.cvtColor(img2,cv2.COLOR_BGR2GRAY)
+            disparity1 = stereo.compute(gray1,gray2).astype(np.float32)/16
+            cv2.imshow("Disparity1",disparity1)
+
+            gray3 = cv2.cvtColor(img3,cv2.COLOR_BGR2GRAY)
+            gray4 = cv2.cvtColor(img4,cv2.COLOR_BGR2GRAY)
+
+            disparity2 = stereo.compute(gray3,gray4).astype(np.float32)/16
+            cv2.imshow("Disparity2",disparity2)
 
             # Post processing/compilation
             
             # img = np.vstack([np.hstack([img1, img2]),
             #                  np.hstack([img3, img4])])
 
-            gray1 = cv2.cvtColor(img1,cv2.COLOR_BGR2GRAY)
-            gray2 = cv2.cvtColor(img2,cv2.COLOR_BGR2GRAY)
-
-            disparity = stereo.compute(gray1,gray2).astype(np.float32)/16
-
-            cv2.imshow("Disparity",disparity)
             if cv2.waitKey(1) == 27:
                 # close out on escape
                 break
