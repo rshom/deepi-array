@@ -148,3 +148,4 @@ ip route replace 10.0.14.0/24 via 192.168.8.111
 
   * http://raspberryjamberlin.de/zero360-part-2-connecting-via-otg-a-cluster-of-raspberry-pi-zeros-to-a-pi-3/
   * https://forums.raspberrypi.com/viewtopic.php?t=217320
+  * https://learnopencv.com/depth-perception-using-stereo-camera-python-c/
