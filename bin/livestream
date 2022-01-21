@@ -1,0 +1,42 @@
+#!/bin/bash
+# 
+# Create a live stream from all connected DEEPi cameras. The cameras
+# are connected via ethernet over usb. Each has a unique IP
+# address. In this case the IP addresses are 10.0.1x.2 where x is 1
+# through 4 representing each of the DEEPi.
+
+# TODO: create a more robust way of determining which pis are attached.
+
+# TODO: This script opens up the streams in mplayer which is a pretty poor
+
+# TODO: include flags for the different live stream methods listed below
+## https://raspberrypi.stackexchange.com/questions/27082/how-to-stream-raspivid-to-linux-and-osx-using-gstreamer-vlc-or-netcat
+## netcat (fastest)
+## GStreamer
+## VLC (simpler client)
+
+# TODO: additional possiblities for live stream
+## Webapp (multiple options here)
+## MotionOS
+## python picamera
+
+# Catch streams
+nc -l 5001 | mplayer -fps 200 -demuxer h264es - &
+nc -l 5002 | mplayer -fps 200 -demuxer h264es - &
+nc -l 5003 | mplayer -fps 200 -demuxer h264es - &nc -l 5004 | mplayer -fps 200 -demuxer h264es - &
+
+sleep 5
+
+
+# Request stream from each pi
+ssh pi@10.0.11.2 /opt/vc/bin/raspivid -t 0 -w 300 -h 300 -hf -fps 20 -o - | nc 10.0.11.1 5001 &
+
+ssh pi@10.0.12.2 /opt/vc/bin/raspivid -t 0 -w 300 -h 300 -hf -fps 20 -o - | nc 10.0.12.1 5002 &
+
+ssh pi@10.0.13.2 /opt/vc/bin/raspivid -t 0 -w 300 -h 300 -hf -fps 20 -o - | nc 10.0.13.1 5003 &
+
+ssh pi@10.0.14.2 /opt/vc/bin/raspivid -t 0 -w 300 -h 300 -hf -fps 20 -o - | nc 10.0.14.1 5004 &
+
+
+
+wait				# ensure all threads are killed???

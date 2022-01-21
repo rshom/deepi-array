@@ -1,0 +1,17 @@
+#!/bin/bash
+# Reboot the DEEPi which is necessary if there is a problem.
+#
+# reset-cluster relies on two outside commands, uhubctl and
+# usbreset.
+#
+# [uhubctl](https://github.com/mvp/uhubctl)
+# [usbreset](https://github.com/jkulesza/usbreset)
+
+sudo uhubctl -l 1-1 -a 0	# power all off
+sudo uhubctl -l 1-1 -a 1	# power all on
+sleep 30			# allow DEEPi to power on
+sudo usbreset /dev/bus/usb/001/002 # reset hub
+
+
+
+

@@ -1,0 +1,24 @@
+#!/bin/bash
+# Run script for the deep sea observatory
+# 
+# Observatory boots up and runs an event. At each event, the
+# observatory will boot the DEEPi Array and power it for approximately
+# 60 minutes. During that time the array will take a 720p picture
+# every 10 minutes. The photos will operate off of a seperate cron
+# job. The purpose of this script is to run basic checks and log
+# information. A similar script will run on the individual DEEPi
+
+# Sync time
+# HACK: time sync is not working, so instead the system will skip
+# forward in time at every event.
+
+# TODO: skip forward in time
+
+# Run status checks
+
+# TODO: all network connections active
+# TODO: check disk space
+
+# TODO: if there is a problem what do???
+
+# TODO: write status to log of some sort

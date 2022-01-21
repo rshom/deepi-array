@@ -1,0 +1,34 @@
+#!/bin/bash
+#
+# Ping all the attached DEEPi and check connections
+
+# TODO: modify to use for loop
+# TODO: modify to check for interfaces in some way
+
+ping -q -c1 10.0.11.2 > /dev/null
+ 
+if [ $? -eq 0 ]
+then
+	echo "DEEPi01 ok"
+fi
+
+ping -q -c1 10.0.12.2 > /dev/null
+ 
+if [ $? -eq 0 ]
+then
+	echo "DEEPi02 ok"
+fi
+
+ping -q -c1 10.0.13.2 > /dev/null
+ 
+if [ $? -eq 0 ]
+then
+	echo "DEEPi03 ok"
+fi
+
+ping -q -c1 10.0.14.2 > /dev/null
+ 
+if [ $? -eq 0 ]
+then
+	echo "DEEPi04 ok"
+fi
