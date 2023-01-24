@@ -54,11 +54,8 @@ gateway 10.0.1X.1
 
 ```
 # /lib/dhcpcd/dhcpcd-hooks/40-route
-ip route replace 192.168.8.0/24 dev usb0 via 10.0.1X.1
-ip route replace 10.0.11.0/24 dev usb0 via 10.0.1X.1
-ip route replace 10.0.12.0/24 dev usb0 via 10.0.1X.1
-ip route replace 10.0.13.0/24 dev usb0 via 10.0.1X.1
-ip route replace 10.0.14.0/24 dev usb0 via 10.0.1X.1
+ip route replace 169.254.0.0/16 dev usb0 via 10.0.1X.1
+ip route replace 10.0.0.0/16 dev usb0 via 10.0.1X.1
 ```
 > NOTE: IP routing order is from most to least specific.
 
@@ -113,11 +110,11 @@ static ip_address=10.0.14.1/24
 
 ```
 # /lib/dhcpcd/dhcpcd-hooks/40-route
-ip route replace 192.168.8.0/24 dev eth0
-ip route replace 10.0.11.0/24 dev usb0
-ip route replace 10.0.12.0/24 dev usb0
-ip route replace 10.0.13.0/24 dev usb0
-ip route replace 10.0.14.0/24 dev usb0
+ip route replace 169.254.0.0/16 dev eth0
+ip route replace 10.0.11.0/24 dev usb1
+ip route replace 10.0.12.0/24 dev usb2
+ip route replace 10.0.13.0/24 dev usb3
+ip route replace 10.0.14.0/24 dev usb4
 ```
 
 ## Router ##
