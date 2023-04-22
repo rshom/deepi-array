@@ -1,3 +1,6 @@
 [submodule "picamarray"]
 	path = picamarray
 	url = ./picamarray
+[submodule "deepi-python"]
+	path = deepi-python
+	url = git@github.com:URIL-Group/deepi-python.git

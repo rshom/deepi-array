@@ -1,0 +1,100 @@
+#!/usr/bin/env python3
+'''Determine camera positions from saved points
+
+'''
+
+import logging
+import time
+import numpy as np
+
+import cv2 as cv
+
+import pickle
+import yaml
+
+num_cameras = 4
+identity_transform = np.concatenate([np.eye(3),np.zeros([3,1])],axis=-1)
+
+def load_calibration(fcal):
+    logging.info(f"Loading calibration from {fcal}")
+    with open(fcal) as f:
+        data = yaml.load(f, Loader=yaml.Loader)
+        
+    mtx = np.array(data['camera_matrix'])
+    dst = np.array(data['dist_coeff'])
+
+    return mtx,dst
+
+
+logging.basicConfig(format='%(levelname)s: %(message)s',level=logging.DEBUG)
+
+logging.info("Loading calibration data")
+with open('calibration_data.pickle','rb') as f:
+    calibraters = pickle.load(f)
+
+# Compare each camera pair
+
+cams = range(1,num_cameras+1)
+camera_pairs = [(a,b) for a in cams for b in cams]
+
+camera_transforms = []
+
+for pair in camera_pairs:
+    print()
+    logging.info(f"Comparing cameras: {pair}")
+    calA = calibraters[pair[0]-1]
+    calB = calibraters[pair[1]-1]
+
+    logging.info("Loading intrinsic calibration")
+    mtxA,dstA = load_calibration(f"deepi{pair[0]}.yaml")
+    mtxB,dstB = load_calibration(f"deepi{pair[1]}.yaml")
+
+    # How many shared frames exist
+    N, A, B=np.intersect1d(calA.frame_num,calB.frame_num,
+                           assume_unique=False,
+                           return_indices=True)
+
+    logging.info(f"Found {len(N)} common frames.")
+
+    OP = np.array(calA.objpoints)[A]
+    IA = np.array(calA.imgpoints)[A]
+    IB = np.array(calB.imgpoints)[B]
+
+    logging.info("Running stereo calibration")
+    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 0.0001)
+    stereocalibration_flags = cv.CALIB_FIX_INTRINSIC
+    ret,CM1,dist1,CM2,dist2,R,T,E,F=cv.stereoCalibrate(OP, IA, IB,
+                                                       mtxA, dstA,
+                                                       mtxB, dstB,
+                                                       (1920,1080),
+                                                       criteria=criteria,
+                                                       flags=stereocalibration_flags)
+    
+    RT = np.concatenate([R,T],axis=-1)
+
+    logging.info("Found rotation-tranlation matrix")
+    print(RT)
+
+    if pair[0]==pair[1]:
+        RT = identity_transform
+
+    camera_transforms.append(RT)
+
+camera_transforms = np.reshape(np.array(camera_transforms),
+                               (num_cameras,num_cameras,3,4))
+
+print()
+print()
+logging.info("Plotting poses")
+transforms = camera_transforms[0]
+
+
+
+cam = 0
+Xw = np.array([0,0,0,1]).T
+print(Xw)
+print()
+for RT in transforms:
+    print(RT@Xw)
+
+    

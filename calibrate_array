@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+''' Calibrate array cameras intrinsics and extrinsics
+
+'''
+
+import cv2 as cv
+import logging
+import time
+import numpy as np
+
+from multiview import MultiStreamRx
+from calibration import Calibrater, save_camera_intrinsics
+
+logging.basicConfig(format='%(levelname)s: %(message)s',level=logging.DEBUG)
+
+# Set up calibration and streams
+CHECKBOARD_SIZE = (7,6)
+CHECK_SIZE = (1,1)          # inch
+
+addrs = [
+    ('10.0.11.2',8000),
+    ('10.0.12.2',8000),
+    ('10.0.13.2',8000),
+    ('10.0.14.2',8000),
+]
+N = len(addrs)
+
+rotations = [None,
+             cv.ROTATE_180,
+             cv.ROTATE_180,
+             None,
+             ]
+
+calibraters = [ Calibrater(checkboard_size=CHECKBOARD_SIZE) for i in range(N) ]
+
+def process_frame(calibrater,frame,N=None,rotation=None):
+
+    ret,corners = calibrater.check_frame(frame,N=N)
+    if ret:
+        cv.drawChessboardCorners(frame,CHECKBOARD_SIZE,corners,ret)
+
+    if rotation is not None:
+        frame = cv.rotate(frame,rotation)
+    return frame
+
+
+
+logging.info("Opening streams")
+with MultiStreamRx(addrs) as streams:
+
+    logging.info("Starting streams")
+    [stream.start() for stream in streams]
+
+    cnt = 0
+    start = time.time()
+    while True:    
+        cnt = cnt+1
+
+        frames = [stream.frame for stream in streams]
+        for n in range(N):
+            process_frame(calibraters[n], frames[n], N=cnt,
+                          rotation=rotations[n])
+
+        frame = np.concatenate((np.concatenate((frames[2],frames[3]),axis=1),
+                                np.concatenate((frames[1],frames[0]),axis=1)),
+                               axis=0)
+
+        cv.imshow("Stream",frame)
+
+        k = cv.waitKey(1)
+        if k != -1:
+            logging.debug(f"Key press: {k}")
+            # ctrl.send_cmd(keycmd(k))
+        if k==27:
+            logging.debug("Closing out")
+            break         
+    
+    logging.debug("Closing streams")
+    logging.info("Closing windows")
+    cv.destroyAllWindows()
+    cv.waitKey(1)
+    
+
+# Run intrinsic calibrations
+for n,calibrater in enumerate(calibraters):
+    print()
+    logging.info(f"Running Calibration with {calibrater.N} frames on camera {n+1}")    
+    start = time.time()
+    h,w = streams[n].frame.shape[:2] # get res from last frame
+    ret,mtx,dst = calibrater.calibrate((h,w))
+    logging.debug(f"Calibration complete ({time.time()-start:.2f} sec)")    
+
+    logging.info(f"ret: {ret}")
+    logging.info(f"Camera Matrix: {mtx}")
+    logging.info(f"Distortion Coefficient: {dst}")
+
+    from pathlib import Path
+    fname = f"deepi{n+1}.yaml"
+    fdir = Path('.')
+    fpath = fdir / fname
+    logging.debug(f"Directory: {fpath}")
+    assert(fdir.is_dir()==True,f"Directory: {fdir} does not exist")    
+
+    save_camera_intrinsics(mtx,dst,fpath)
+
+
+# Save the raw data for analysis
+import pickle
+with open('calibration_data.pickle','wb') as f:
+    logging.info("Saving raw data")
+    pickle.dump(calibraters,f)

@@ -1,0 +1,12 @@
+[Unit]
+Description=DEEPi Service
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/
+ExecStart=/home/pi/node.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
