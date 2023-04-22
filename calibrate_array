@@ -13,6 +13,10 @@ from calibration import Calibrater, save_camera_intrinsics
 
 logging.basicConfig(format='%(levelname)s: %(message)s',level=logging.DEBUG)
 
+from pathlib import Path
+CAL_DIR = Path('./calibration_data')
+# TODO: make dir if it does not exist
+
 # Set up calibration and streams
 CHECKBOARD_SIZE = (7,6)
 CHECK_SIZE = (1,1)          # inch
@@ -94,10 +98,8 @@ for n,calibrater in enumerate(calibraters):
     logging.info(f"Camera Matrix: {mtx}")
     logging.info(f"Distortion Coefficient: {dst}")
 
-    from pathlib import Path
     fname = f"deepi{n+1}.yaml"
-    fdir = Path('.')
-    fpath = fdir / fname
+    fpath = CAL_DIR / fname
     logging.debug(f"Directory: {fpath}")
     assert(fdir.is_dir()==True,f"Directory: {fdir} does not exist")    
 
@@ -109,3 +111,4 @@ import pickle
 with open('calibration_data.pickle','wb') as f:
     logging.info("Saving raw data")
     pickle.dump(calibraters,f)
+    # FIXME: save to yaml or csv instead

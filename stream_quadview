@@ -1,0 +1,73 @@
+#! /usr/bin/env python
+''' Open the camera streams and display as a quadview
+
+'''
+
+import logging
+import time
+import numpy as np
+
+import cv2 as cv
+
+from picamarray import MultiStreamRx
+
+ logging.basicConfig(format='%(levelname)s: %(message)s',level=logging.INFO)
+
+ addrs = [
+     ('10.0.11.2',8000),
+     ('10.0.12.2',8000),
+     ('10.0.13.2',8000),
+     ('10.0.14.2',8000),
+ ]
+
+ # TODO: make specific dual and quad streams and place in a different file
+ with MultiStreamRx(addrs) as streams:
+
+     streams[0].load_calibration("deepi1.yaml")
+     streams[1].load_calibration("deepi2.yaml")
+     streams[2].load_calibration("deepi3.yaml")
+     streams[3].load_calibration("deepi4.yaml")
+
+     # FIXME: rotations should depend on calibration as well
+     streams[0].rotation = cv.ROTATE_90_CLOCKWISE
+     streams[1].rotation = cv.ROTATE_90_COUNTERCLOCKWISE
+     streams[2].rotation = cv.ROTATE_90_COUNTERCLOCKWISE
+     streams[3].rotation = cv.ROTATE_90_CLOCKWISE
+
+     logging.info("Starting streams")
+     [stream.start() for stream in streams]
+
+     cnt = 0
+     start = time.time()
+     while True:
+
+         frames = [stream.frame for stream in streams]
+
+
+         [logging.debug(frame.shape) for frame in frames]
+
+         frame = np.concatenate((np.concatenate((frames[2],frames[3]),axis=1),
+                                 np.concatenate((frames[1],frames[0]),axis=1)),
+                                axis=0)
+
+         cv.imshow("Stream",frame)
+         cnt = cnt+1
+
+         k = cv.waitKey(1)
+         if k != -1:
+             logging.debug(f"Key press: {k}")
+             # ctrl.send_cmd(keycmd(k))
+
+         if k==27:
+             logging.debug("Breaking loop")
+             # close out on escape
+             break
+     finish = time.time()
+
+ cv.destroyAllWindows()
+
+ logging.info(f'Displayed {cnt} frames in {finish-start:.1f} seconds '\
+              f'({cnt/(finish-start):.1f}fps)')
+
+
+ # ctrl.close()

@@ -4,3 +4,6 @@
 [submodule "deepi-python"]
 	path = deepi-python
 	url = git@github.com:URIL-Group/deepi-python.git
+[submodule "extrinsic2pyramid"]
+	path = extrinsic2pyramid
+	url = https://github.com/demul/extrinsic2pyramid.git

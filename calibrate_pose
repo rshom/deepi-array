@@ -12,7 +12,13 @@ import cv2 as cv
 import pickle
 import yaml
 
-num_cameras = 4
+from pathlib import Path
+
+from picamarray import Calibrater
+
+CAL_PATH = Path("./calibration_data")
+NUM_CAMS = 4
+
 identity_transform = np.concatenate([np.eye(3),np.zeros([3,1])],axis=-1)
 
 def load_calibration(fcal):
@@ -29,12 +35,12 @@ def load_calibration(fcal):
 logging.basicConfig(format='%(levelname)s: %(message)s',level=logging.DEBUG)
 
 logging.info("Loading calibration data")
-with open('calibration_data.pickle','rb') as f:
+with open(CAL_PATH / 'calibration_data.pickle','rb') as f:
     calibraters = pickle.load(f)
 
 # Compare each camera pair
 
-cams = range(1,num_cameras+1)
+cams = range(1,NUM_CAMS+1)
 camera_pairs = [(a,b) for a in cams for b in cams]
 
 camera_transforms = []
@@ -46,8 +52,8 @@ for pair in camera_pairs:
     calB = calibraters[pair[1]-1]
 
     logging.info("Loading intrinsic calibration")
-    mtxA,dstA = load_calibration(f"deepi{pair[0]}.yaml")
-    mtxB,dstB = load_calibration(f"deepi{pair[1]}.yaml")
+    mtxA,dstA = load_calibration(CAL_PATH / f"deepi{pair[0]}.yaml")
+    mtxB,dstB = load_calibration(CAL_PATH / f"deepi{pair[1]}.yaml")
 
     # How many shared frames exist
     N, A, B=np.intersect1d(calA.frame_num,calB.frame_num,
@@ -81,9 +87,8 @@ for pair in camera_pairs:
     camera_transforms.append(RT)
 
 camera_transforms = np.reshape(np.array(camera_transforms),
-                               (num_cameras,num_cameras,3,4))
+                               (NUM_CAMS,NUM_CAMS,3,4))
 
-print()
 print()
 logging.info("Plotting poses")
 transforms = camera_transforms[0]
