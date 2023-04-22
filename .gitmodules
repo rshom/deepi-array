@@ -1,0 +1,3 @@
+[submodule "picamarray"]
+	path = picamarray
+	url = ./picamarray
