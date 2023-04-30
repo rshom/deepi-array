@@ -130,6 +130,31 @@ network={
         psk="Welcome2BIOS"
 }
 ```
+
+11. Set up timesync
+
+```
+sudo apt-get install chrony
+```
+
+Add to the end of `/etc/chrony/chrony.conf`.
+
+```
+server 127.127.1.0
+allow
+local
+```
+
+Restart the service.
+
+```
+sudo systemctl daemon-reload
+sudo systemctl restart chronyd
+```
+
+Check sources with `chronyc sources -v`
+
+Check clients with `sudo chronyc clients`.
 	 
 ## RPiZ Array Nodes ##
 
@@ -235,6 +260,24 @@ network={
 }
 ```
 
+11. Set up time sync
+
+Open `/etc/systemd/timesyncd.conf` and after `[Time]` add
+
+```
+NTP=10.0.1{N}.1
+```
+
+Then restart and check status
+
+```
+sudo apt-get install systemd-timesyncd
+sudo systemctl daemon-reload
+sudo systemctl restart systemd-timesyncd
+sudo systemctl status systemd-timesyncd 
+```
+
+To check if it is working, use `timedatectl show-timesync`
 
 ## Controller Software Set Up ##
 
@@ -242,7 +285,8 @@ network={
    respectively.
    
    
-2. Add a call to `@reboot resethub` to crontab using `sudo crontab -e`.
+2. Add a call to `@reboot resethub` to crontab using `sudo crontab
+   -e`.
 
 ### Set up parallel ssh ###
 
