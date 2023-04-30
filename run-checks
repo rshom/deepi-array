@@ -1,0 +1,52 @@
+#!/bin/sh
+# Check to see if network interfaces are up and log results
+
+check_iface() {
+
+
+    FILE=/sys/class/net/$1/operstate
+    #logger "$FILE"
+
+    if [ -f "$FILE" ]; then
+	STATUS=$(cat $FILE)
+    else
+	STATUS="down"
+    fi
+
+    logger "Network iface $1: $STATUS"
+
+    if [ "$STATUS" = "up" ]; then
+	return 1
+    else
+	return 0
+    fi
+
+
+}
+
+check_iface usb1
+check_iface usb2
+check_iface usb3
+check_iface usb4
+
+
+STAYUP=0
+
+check_iface eth0
+if [ $? ]; then
+    STAYUP=1
+fi
+   
+check_iface wlan0
+if [ $? ]; then
+    STAYUP=1
+fi
+
+
+if [ $STAYUP ]; then
+    logger "Outside connection detected: do not quit"
+fi
+
+# TODO check hard drive space
+
+exit

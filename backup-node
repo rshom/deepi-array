@@ -1,16 +1,29 @@
 #!/bin/sh
 # Back up data saved on node and 
 
-echo "Backing up node: $1";
+ADDR=$1
 
-DIR="~/$1/Videos"
+logger "Backing up node: $ADDR";
 
-if [ -d "$DIR" ];
+VIDDIR=~/$ADDR/Videos
+LOGDIR=~/$ADDR/log
+
+if [ ! -d "$LOGDIR" ];
 then
-    echo "$DIR directory exists."
-else
-    echo "$DIR directory does not exist."
+    logger "Creating log backup dir: $LOGDIR"
+    mkdir -p $LOGDIR || logger "Failed to create $LOGDIR"
+fi
+
+rsync -a pi@$ADDR:/var/log/syslog $LOGDIR  || logger "Log sync failed: $ADDR"
+
+if [ ! -d "$VIDDIR" ];
+then
+    logger "Creating video backup dir: $VIDDIR"
+    mkdir -p $VIDDIR || logger "Failed to create $VIDDIR"
 fi
 
 
-#rsync -a pi@10.0.11.2:Videos/ ~/
+rsync -a pi@$ADDR:Videos/ $VIDDIR || logger "Video sync failed: $ADDR"
+
+
+exit

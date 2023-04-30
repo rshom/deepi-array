@@ -1,0 +1,25 @@
+#!/usr/bin/env python
+'''Capture simple video
+
+'''
+
+from datetime import datetime
+from pathlib import Path
+
+from picamera import PiCamera
+
+import logging
+logging.basicConfig(filename='example.log', encoding='utf-8',format='%(asctime)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+
+logging.info("script started")
+fdir = Path('/home/pi/Videos')
+
+with PiCamera() as picam:
+    dtg = datetime.now()
+    logging.info("recording started")
+    picam.start_recording(f'/home/pi/Videos/{dtg.isoformat()}.h264')
+    picam.wait_recording(5)
+    logging.info("recording stopping")
+    picam.stop_recording()
+
+logging.info("Script stopping")

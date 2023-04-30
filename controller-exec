@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# TODO: sync time with RTC as well
+
+logger "Array powered on"
+
+# TODO: sleep to ensure everything wakes up
+# Reset the network before doing anything else
+sudo resethub || logger "USB hub reset"
+
+sleep 10
+
+run-checks || logger "Checks failed"
+
+backup-node 10.0.11.2
