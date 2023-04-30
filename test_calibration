@@ -1,0 +1,30 @@
+#! /usr/bin/env
+'''Open sycned images and test calibration
+
+'''
+
+import numpy as np
+import cv2 as cv
+from pathlib import Path
+frame_dir = Path("./calibration_data/synced_frames")
+
+cams = [1,2,3,4]
+
+def combine_frames(frames):
+    return np.concatenate((np.concatenate((frames[3],frames[1]),axis=1),
+                           np.concatenate((frames[0],frames[2]),axis=1)),
+                          axis=0)
+
+
+
+ids = set([f.name[:-6] for f in frame_dir.glob(f'*.png')])
+
+# TODO: impliment logging
+
+for id in ids:
+
+    frames = [cv.imread(str(frame_dir/f"{id}-{cam}.png")) for cam in cams]
+
+    frame = combine_frames(frames)
+    cv.imshow("frame",frame)
+    cv.waitKey(1000)

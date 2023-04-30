@@ -1,0 +1,176 @@
+#!/usr/bin/env python3
+''' Calibrate array from captured calibration data
+
+'''
+
+import logging
+import time
+import numpy as np
+import matplotlib.pyplot as plt
+
+import cv2 as cv
+
+import pickle
+import yaml
+
+from pathlib import Path
+from picamarray import Calibrater, save_camera_intrinsics
+
+
+CAL_PATH = Path("./calibration_data")
+IMG_PATH = CAL_PATH / "synced_frames"
+
+IMG_ID = 1682614708             # take a good image for comparison
+
+# TODO: figure out what all criteria and flags mean
+criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 30, 0.0001)
+stereocalibration_flags = 0
+stereocalibration_flags |= cv.CALIB_FIX_INTRINSIC
+
+
+logging.basicConfig(format='%(levelname)s: %(message)s',level=logging.INFO)
+
+logging.info(f"Loading calibration data from {CAL_PATH}")
+with open(CAL_PATH / 'calibration_data.pickle','rb') as f:
+    # TODO: save/load in human readable format
+    calibraters = pickle.load(f)
+
+
+for n,calibrater in enumerate(calibraters):
+
+    # Display frame
+    img = cv.imread(str(IMG_PATH/f"{IMG_ID}-{n+1}.png"))
+
+    
+    # cv.imshow("Raw Image",img)
+    # cv.waitKey(1000)
+
+
+    frame_idx = calibrater.frame_num
+    objpoints = calibrater.objpoints
+    imgpoints = calibrater.imgpoints
+
+    # FIXME: this is reverse?
+    img_size = (calibrater.res[1],calibrater.res[0])
+
+    # Calibrate single camera
+    logging.info(f"Calibrating camera {n}: {len(imgpoints)} frames")
+    ret,mtx,dst,_,_ = cv.calibrateCamera(objpoints, imgpoints,
+                                         img_size, None,None)
+
+    logging.info(f"RMS re-projection error: \n{ret}\n")
+    logging.info(f"Intrinic camera matrix: \n{mtx}\n")
+    logging.info(f"Distortion coefficients: \n{dst}\n")
+
+    dst_mtx, roi = cv.getOptimalNewCameraMatrix(mtx, dst, img_size,
+                                                1, img_size)
+    # FIXME: magic number
+
+    logging.info(f"Distorted camera matrix: \n{dst_mtx}\n")
+    logging.info(f"ROI: \n{roi}\n")
+
+    mapx, mapy = cv.initUndistortRectifyMap(mtx, dst, None, dst_mtx,
+                                            img_size, 5)
+    dst_img = cv.remap(img, mapx, mapy, cv.INTER_LINEAR)
+    # FIXME: magic number
+
+    # cv.imshow("Undestorted Image",dst_img)
+    # cv.waitKey(1000)
+
+    mtx = dst_mtx               # ???
+
+    if n==0:
+        logging.debug("Handling primary camera")
+        base_frame_idx = frame_idx
+        base_imgpoints = imgpoints
+        base_mtx = mtx
+        base_dst = dst
+        base_img = img
+        #base_dst_mtx = dst_mtx
+
+        base_mapx = mapx
+        base_mapy = mapy
+        continue
+
+
+    # Calibrate position compared to base camera
+    N, A, B = np.intersect1d(frame_idx, base_frame_idx,
+                             assume_unique=False, return_indices=True)
+    logging.info(f"Found {len(N)} common frames.")
+
+    OP = np.array(objpoints)[A]
+    IA = np.array(imgpoints)[A]
+    IB = np.array(base_imgpoints)[B]
+
+
+    logging.info("Running stereo calibration")
+    ret,CMA,distA,CMB,distB,R,T,E,F=cv.stereoCalibrate(OP,IA,IB,
+                                                       mtx,dst,
+                                                       base_mtx,base_dst,
+                                                       img_size,
+                                                       criteria=criteria,
+                                                       flags=stereocalibration_flags)
+    
+    logging.info(f"RMS re-projection error: \n{ret}\n")
+    logging.info(f"Rotation Matrix: \n{R}\n")
+    logging.info(f"Translation Vector: \n{T}\n")
+    logging.info(f"Essential Matrix: \n{E}\n")
+    logging.info(f"Fundamental Matrix: \n{F}\n")
+
+
+    R1,R2,P1,P2,Q,roi1,roi2 = cv.stereoRectify(mtx,dst,
+                                                base_mtx,base_dst,
+                                                img_size,R,T)
+    logging.info(f"ROI1: \n{roi1}\n")
+    logging.info(f"ROI2: \n{roi2}\n")
+
+
+    xmap1, ymap1 = cv.initUndistortRectifyMap(mtx,dst, R1,P1,
+                                              img_size, cv.CV_32FC1)
+
+    xmap2, ymap2 = cv.initUndistortRectifyMap(base_mtx,base_dst,R2,P2,
+                                              img_size, cv.CV_32FC1)
+    
+
+    img_rectified = cv.remap(img, xmap1, ymap1,
+                             cv.INTER_LINEAR,cv.BORDER_CONSTANT)
+    base_img_rectified = cv.remap(base_img, xmap2, ymap2,
+                                  cv.INTER_LINEAR,cv.BORDER_CONSTANT)
+
+    
+
+    
+    
+    stereo_bm = cv.StereoBM_create(32)
+    dispmap_bm = stereo_bm.compute(cv.cvtColor(img_rectified,
+                                               cv.COLOR_BGR2GRAY),
+                                   cv.cvtColor(base_img_rectified,
+                                               cv.COLOR_BGR2GRAY))
+
+    stacked = .5*(cv.cvtColor(img_rectified, cv.COLOR_BGR2GRAY)+
+                  cv.cvtColor(base_img_rectified, cv.COLOR_BGR2GRAY))
+
+    stereo_sgbm = cv.StereoSGBM_create(0, 32)
+    dispmap_sgbm = stereo_sgbm.compute(img_rectified, base_img_rectified)
+
+    a = dispmap_sgbm.min()
+    b = dispmap_sgbm.max()
+
+    dispmap_sgbm = np.uint8(255* (dispmap_sgbm-a)/(b-a))
+
+    print((a,b))
+
+    plt.figure(figsize=(12,10))
+    plt.subplot(221)
+    plt.title('left')
+    plt.imshow(img_rectified[:,:,[2,1,0]])
+    plt.subplot(222)
+    plt.title('right')
+    plt.imshow(base_img_rectified[:,:,[2,1,0]])
+    plt.subplot(223)
+    plt.title('BM')
+    plt.imshow(stacked, cmap='gray')
+    plt.subplot(224)
+    plt.title('SGBM')
+    plt.imshow(dispmap_sgbm, cmap='gray')
+    plt.show()

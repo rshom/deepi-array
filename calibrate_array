@@ -1,97 +1,50 @@
 #!/usr/bin/env python3
-''' Calibrate array cameras intrinsics and extrinsics
+''' Calibrate array from captured calibration data
 
 '''
 
-import cv2 as cv
 import logging
 import time
 import numpy as np
 
-from multiview import MultiStreamRx
-from calibration import Calibrater, save_camera_intrinsics
+import cv2 as cv
+
+import pickle
+import yaml
+
+from pathlib import Path
+from picamarray import Calibrater, save_camera_intrinsics
+
+CAL_PATH = Path("./calibration_data")
+NUM_CAMS = 4
+
+identity_transform = np.concatenate([np.eye(3),np.zeros([3,1])],axis=-1)
+
+
+
+def load_calibration(fcal):
+    logging.info(f"Loading calibration from {fcal}")
+    with open(fcal) as f:
+        data = yaml.load(f, Loader=yaml.Loader)
+        
+    mtx = np.array(data['camera_matrix'])
+    dst = np.array(data['dist_coeff'])
+
+    return mtx,dst
+
 
 logging.basicConfig(format='%(levelname)s: %(message)s',level=logging.DEBUG)
 
-from pathlib import Path
-CAL_DIR = Path('./calibration_data')
-# TODO: make dir if it does not exist
-
-# Set up calibration and streams
-CHECKBOARD_SIZE = (7,6)
-CHECK_SIZE = (1,1)          # inch
-
-addrs = [
-    ('10.0.11.2',8000),
-    ('10.0.12.2',8000),
-    ('10.0.13.2',8000),
-    ('10.0.14.2',8000),
-]
-N = len(addrs)
-
-rotations = [None,
-             cv.ROTATE_180,
-             cv.ROTATE_180,
-             None,
-             ]
-
-calibraters = [ Calibrater(checkboard_size=CHECKBOARD_SIZE) for i in range(N) ]
-
-def process_frame(calibrater,frame,N=None,rotation=None):
-
-    ret,corners = calibrater.check_frame(frame,N=N)
-    if ret:
-        cv.drawChessboardCorners(frame,CHECKBOARD_SIZE,corners,ret)
-
-    if rotation is not None:
-        frame = cv.rotate(frame,rotation)
-    return frame
-
-
-
-logging.info("Opening streams")
-with MultiStreamRx(addrs) as streams:
-
-    logging.info("Starting streams")
-    [stream.start() for stream in streams]
-
-    cnt = 0
-    start = time.time()
-    while True:    
-        cnt = cnt+1
-
-        frames = [stream.frame for stream in streams]
-        for n in range(N):
-            process_frame(calibraters[n], frames[n], N=cnt,
-                          rotation=rotations[n])
-
-        frame = np.concatenate((np.concatenate((frames[2],frames[3]),axis=1),
-                                np.concatenate((frames[1],frames[0]),axis=1)),
-                               axis=0)
-
-        cv.imshow("Stream",frame)
-
-        k = cv.waitKey(1)
-        if k != -1:
-            logging.debug(f"Key press: {k}")
-            # ctrl.send_cmd(keycmd(k))
-        if k==27:
-            logging.debug("Closing out")
-            break         
-    
-    logging.debug("Closing streams")
-    logging.info("Closing windows")
-    cv.destroyAllWindows()
-    cv.waitKey(1)
-    
+logging.info("Loading calibration data")
+with open(CAL_PATH / 'calibration_data.pickle','rb') as f:
+    calibraters = pickle.load(f)
 
 # Run intrinsic calibrations
 for n,calibrater in enumerate(calibraters):
     print()
-    logging.info(f"Running Calibration with {calibrater.N} frames on camera {n+1}")    
+    logging.info(f"Running Calibration with {calibrater.N} frames on camera {n+1}") 
     start = time.time()
-    h,w = streams[n].frame.shape[:2] # get res from last frame
-    ret,mtx,dst = calibrater.calibrate((h,w))
+    ret, mtx, dst, rvecs, tvecs = calibrater.calibrate()
     logging.debug(f"Calibration complete ({time.time()-start:.2f} sec)")    
 
     logging.info(f"ret: {ret}")
@@ -99,16 +52,82 @@ for n,calibrater in enumerate(calibraters):
     logging.info(f"Distortion Coefficient: {dst}")
 
     fname = f"deepi{n+1}.yaml"
-    fpath = CAL_DIR / fname
-    logging.debug(f"Directory: {fpath}")
-    assert(fdir.is_dir()==True,f"Directory: {fdir} does not exist")    
-
+    fpath = CAL_PATH / fname
     save_camera_intrinsics(mtx,dst,fpath)
 
+    # fpath = CAL_PATH / "calibration_data_{n+1}.json"
+    # calibrater.dump_json(fpath)
 
-# Save the raw data for analysis
-import pickle
-with open('calibration_data.pickle','wb') as f:
-    logging.info("Saving raw data")
-    pickle.dump(calibraters,f)
-    # FIXME: save to yaml or csv instead
+    
+# Compare each camera pair
+
+cams = range(1,NUM_CAMS+1)
+camera_pairs = [(a,b) for a in cams for b in cams]
+
+camera_transforms = []
+
+for pair in camera_pairs:
+    print()
+    logging.info(f"Comparing cameras: {pair}")
+    calA = calibraters[pair[0]-1]
+    calB = calibraters[pair[1]-1]
+
+    logging.info("Loading intrinsic calibration")
+    mtxA,dstA = load_calibration(CAL_PATH / f"deepi{pair[0]}.yaml")
+    mtxB,dstB = load_calibration(CAL_PATH / f"deepi{pair[1]}.yaml")
+
+    # How many shared frames exist
+    N, A, B=np.intersect1d(calA.frame_num,calB.frame_num,
+                           assume_unique=False,
+                           return_indices=True)
+
+    logging.info(f"Found {len(N)} common frames.")
+
+    OP = np.array(calA.objpoints)[A]
+    IA = np.array(calA.imgpoints)[A]
+    IB = np.array(calB.imgpoints)[B]
+
+    logging.info("Running stereo calibration")
+    criteria = (cv.TERM_CRITERIA_EPS + cv.TERM_CRITERIA_MAX_ITER, 100, 0.0001)
+    stereocalibration_flags = cv.CALIB_FIX_INTRINSIC
+    ret,CM1,dist1,CM2,dist2,R,T,E,F=cv.stereoCalibrate(OP, IA, IB,
+                                                       mtxA, dstA,
+                                                       mtxB, dstB,
+                                                       (1920,1080),
+                                                       criteria=criteria,
+                                                       flags=stereocalibration_flags)
+    
+    RT = np.concatenate([R,T],axis=-1)
+
+    logging.info("Found rotation-tranlation matrix")
+    print(RT)
+
+    if pair[0]==pair[1]:
+        RT = identity_transform
+
+    camera_transforms.append(RT)
+
+
+camera_transforms = np.reshape(np.array(camera_transforms),
+                               (NUM_CAMS,NUM_CAMS,3,4))
+
+print()
+logging.info("Plotting poses")
+transforms = camera_transforms[0]
+
+cam = 0
+Xw = np.array([0,0,0,1]).T
+print(Xw)
+print()
+for RT in transforms:
+    print(RT@Xw)
+
+    
+# TODO: save in usable format
+for RT in transforms:
+    pass
+
+
+
+
+

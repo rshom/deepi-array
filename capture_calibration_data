@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+''' Capture calibration data
+
+'''
+
+# TODO: save data in human readable format
+
+import cv2 as cv
+import logging
+import time
+import numpy as np
+
+from picamarray import MultiStreamRx
+from picamarray import Calibrater
+
+logging.basicConfig(format='%(levelname)s: %(message)s',level=logging.DEBUG)
+
+from pathlib import Path
+CAL_DIR = Path('./calibration_data')
+logging.debug(f"Directory: {CAL_DIR}")
+assert CAL_DIR.is_dir(), f"Directory: {fdir} does not exist"
+
+# Set up calibration and streams
+CHECKBOARD_SIZE = (7,6)
+CHECK_SIZE = (1,1)          # inch
+
+cams = [1,2,3,4]
+addrs = [(f'10.0.1{n}.2',8000) for n in cams]
+rotations = [ cv.ROTATE_180, None, cv.ROTATE_180, None, ]
+# rotations = [ None, cv.ROTATE_180, None, cv.ROTATE_180]
+
+calibrations = [None for n in cams]
+
+def process_frame(calibrater,frame,N=None,rotation=None):
+
+    if rotation is not None:
+        cv.rotate(frame,rotation)
+
+    ret,corners = calibrater.check_frame(frame,N=N)
+    if ret:
+        cv.drawChessboardCorners(frame,CHECKBOARD_SIZE,corners,ret)
+
+    return frame
+
+def combine_frames(frames):
+    return np.concatenate((np.concatenate((frames[3],frames[1]),axis=1),
+                           np.concatenate((frames[0],frames[2]),axis=1)),
+                          axis=0)
+
+
+logging.info("Opening streams")
+with MultiStreamRx(addrs, calibrations, rotations) as streams:
+
+    logging.info("Starting streams")
+    [stream.start() for stream in streams]
+
+    calibraters = [ Calibrater(stream,
+                               checkboard_size=CHECKBOARD_SIZE) for
+                    stream in streams ]
+
+    cnt = 0
+    start = time.time()
+    while True:    
+        cnt = cnt+1
+
+        frames = [stream.frame for stream in streams]
+
+        for n in range(len(frames)):
+            process_frame(calibraters[n], frames[n], N=cnt,
+                          rotation=rotations[n])
+
+        frame = combine_frames(frames)
+
+        cv.imshow("Stream",frame)
+
+        k = cv.waitKey(1)
+        if k != -1:
+            logging.debug(f"Key press: {k}")
+            # ctrl.send_cmd(keycmd(k))
+        if k==27:
+            logging.debug("Closing out")
+            break         
+    
+    logging.debug("Closing streams")
+    logging.info("Closing windows")
+    cv.destroyAllWindows()
+    cv.waitKey(1)
+    
+# TODO: log out number of frames and number of common frames
+
+# Save the raw data for analysis
+import pickle
+with open(CAL_DIR / 'calibration_data.pickle','wb') as f:
+    logging.info("Saving raw data")
+    pickle.dump(calibraters,f)
+
+
+
+for n,calibrater in enumerate(calibraters):
+
+    logging.info(f"Camera {n}: {len(calibrater.imgpoints)} frames")
+

@@ -13,7 +13,7 @@ The RPi4 creates a network with the RPiZs using Ethernet-over-USB for
 communications. A topside computer can access the array using ethernet
 communications to the RPi4.
 
-The RPi4 can controll the array directly or simply act as a pass through
+The RPi4 can control the array directly or simply act as a pass through
 for another controller. 
 
 
@@ -21,3 +21,11 @@ for another controller.
 
 
 
+## TODO ##
+
+  * [ ] sample synced images
+  * [ ] rectify frames
+  * [ ] match points
+  * [ ] disparity map
+  * [ ] stack frames
+  * [ ] stitch frames

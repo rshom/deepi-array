@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 ''' Open the camera streams and display as a quadview
 
 '''
@@ -11,63 +11,76 @@ import cv2 as cv
 
 from picamarray import MultiStreamRx
 
- logging.basicConfig(format='%(levelname)s: %(message)s',level=logging.INFO)
+logging.basicConfig(format='%(levelname)s: %(message)s',level=logging.DEBUG)
 
- addrs = [
-     ('10.0.11.2',8000),
-     ('10.0.12.2',8000),
-     ('10.0.13.2',8000),
-     ('10.0.14.2',8000),
- ]
+cams = [1,2,3,4]
+addrs = [(f'10.0.1{n}.2',8000) for n in cams]
+rotations = [ cv.ROTATE_180, None, cv.ROTATE_180, None, ]
+calibrations = [f"deepi{n}.yaml" for n in cams]
 
- # TODO: make specific dual and quad streams and place in a different file
- with MultiStreamRx(addrs) as streams:
+# rotations = [None for n in cams]
+calibrations = [None for n in cams]
 
-     streams[0].load_calibration("deepi1.yaml")
-     streams[1].load_calibration("deepi2.yaml")
-     streams[2].load_calibration("deepi3.yaml")
-     streams[3].load_calibration("deepi4.yaml")
-
-     # FIXME: rotations should depend on calibration as well
-     streams[0].rotation = cv.ROTATE_90_CLOCKWISE
-     streams[1].rotation = cv.ROTATE_90_COUNTERCLOCKWISE
-     streams[2].rotation = cv.ROTATE_90_COUNTERCLOCKWISE
-     streams[3].rotation = cv.ROTATE_90_CLOCKWISE
-
-     logging.info("Starting streams")
-     [stream.start() for stream in streams]
-
-     cnt = 0
-     start = time.time()
-     while True:
-
-         frames = [stream.frame for stream in streams]
+def combine_frames(frames):
+    return np.concatenate((np.concatenate((frames[3],frames[1]),axis=1),
+                           np.concatenate((frames[0],frames[2]),axis=1)),
+                          axis=0)
 
 
-         [logging.debug(frame.shape) for frame in frames]
+save_frames = True
+from pathlib import Path
+frame_dir = Path("./calibration_data/synced_frames")
+save_delay  = 5
 
-         frame = np.concatenate((np.concatenate((frames[2],frames[3]),axis=1),
-                                 np.concatenate((frames[1],frames[0]),axis=1)),
-                                axis=0)
+def save_frames(frames, cam_order=cams):
+    t = round(time.time())
+    for n in cam_order:
+        fpath = frame_dir / f"{t}-{n}.png"
+        logging.debug(f"Saving frame: {fpath}")
+        cv.imwrite(f"{fpath}",frames[n-1])
 
-         cv.imshow("Stream",frame)
-         cnt = cnt+1
-
-         k = cv.waitKey(1)
-         if k != -1:
-             logging.debug(f"Key press: {k}")
-             # ctrl.send_cmd(keycmd(k))
-
-         if k==27:
-             logging.debug("Breaking loop")
-             # close out on escape
-             break
-     finish = time.time()
-
- cv.destroyAllWindows()
-
- logging.info(f'Displayed {cnt} frames in {finish-start:.1f} seconds '\
-              f'({cnt/(finish-start):.1f}fps)')
+if save_frames:        
+    logging.info(f"Saving frames every {save_delay} into {frame_dir}.")
 
 
- # ctrl.close()
+logging.info("Opening streams")
+with MultiStreamRx(addrs, calibrations, rotations) as streams:
+
+    logging.info("Starting streams")
+    [stream.start() for stream in streams]
+    
+    cnt = 0
+    start = time.time()
+    last_save = start
+    while True:
+        
+        frames = [stream.frame for stream in streams]
+
+        if (time.time()-last_save) > save_delay:
+            save_frames(frames)
+            last_save = time.time()
+        
+        #[logging.debug(frame.shape) for frame in frames]
+        frame = combine_frames(frames)
+        
+        cv.imshow("Stream",frame)
+        cnt = cnt+1
+        
+        k = cv.waitKey(1)
+        if k != -1:
+            logging.debug(f"Key press: {k}")
+            # ctrl.send_cmd(keycmd(k))
+            
+            if k==27:
+                logging.debug("Breaking loop")
+                # close out on escape
+                break
+    finish = time.time()
+
+cv.destroyAllWindows()
+
+logging.info(f'Displayed {cnt} frames in {finish-start:.1f} seconds '\
+             f'({cnt/(finish-start):.1f}fps)')
+
+
+# ctrl.close()

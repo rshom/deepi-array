@@ -1,0 +1,16 @@
+#!/bin/sh
+# Back up data saved on node and 
+
+echo "Backing up node: $1";
+
+DIR="~/$1/Videos"
+
+if [ -d "$DIR" ];
+then
+    echo "$DIR directory exists."
+else
+    echo "$DIR directory does not exist."
+fi
+
+
+#rsync -a pi@10.0.11.2:Videos/ ~/

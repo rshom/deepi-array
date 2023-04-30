@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+'''Load calibration and visualize array
+
+'''
+
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
+def build_cam_graphic(P, color='r', focal_len_scaled=5, aspect_ratio=0.3):
+
+    a = aspect_ratio
+    f = focal_len_scaled
+    
+    vertex_std = np.array([[  0,    0,0,1],
+                           [f*a, -f*a,f,1],
+                           [f*a,  f*a,f,1],
+                           [-f*a, f*a,f,1],
+                           [-f*a,-f*a,f,1]])
+        
+    V = vertex_std @ P.T # vertex transformed
+    meshes = [[V[0,:-1], V[1][:-1], V[2,:-1]],
+              [V[0,:-1], V[2,:-1], V[3,:-1]],
+              [V[0,:-1], V[3,:-1], V[4,:-1]],
+              [V[0,:-1], V[4,:-1], V[1,:-1]],
+              [V[1,:-1], V[2,:-1], V[3,:-1], V[4,:-1]]]
+    
+    return Poly3DCollection(meshes, facecolors=color, linewidths=0.3,
+                            edgecolors=color, alpha=0.35)
+
+
+
+fig,ax = plt.subplots(1,1, subplot_kw={'projection':'3d'})
+
+ax.set_aspect("auto")
+ax.set_xlim([-50, 50])
+ax.set_ylim([-50, 50])
+ax.set_zlim([0,50])
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+ax.set_zlabel('z')
+
+
+# FIXME: import projection matrix from calibration data
+
+N = 4
+P = [np.eye(4) for n in range(N)]
+
+R = [np.eye(3) for n in range(N)]
+
+T = []
+x_dist = 10
+y_dist = 10
+T.append(np.array([0,0,0]))
+T.append(np.array([0,y_dist,0]))
+T.append(np.array([x_dist,0,0]))
+T.append(np.array([x_dist,y_dist,0]))
+
+
+for n in range(N):
+    P[n][:3,:3] = R[n]
+    P[n][:3,-1] = T[n]
+
+    cam = build_cam_graphic(P[n])
+    ax.add_collection3d(cam)
+
+
+plt.show()
+    
