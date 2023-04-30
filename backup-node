@@ -5,11 +5,10 @@ echo "Backing up node: $1";
 
 DIR="~/$1/Videos"
 
-if [ -d "$DIR" ];
+if [ ! -d "$DIR" ];
 then
-    echo "$DIR directory exists."
-else
-    echo "$DIR directory does not exist."
+    echo "Creating backup directory: $DIR"
+    mkdir $DIR
 fi
 
 
