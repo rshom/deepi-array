@@ -327,3 +327,14 @@ pi@10.0.14.2:22
 1. `resethub`
 2. Check connections in someway
 3. 
+
+## Sleepy Pi ##
+
+1. Follow instructions to set up sleepy pi: https://spellfoundry.com/docs/sleepy-pi-2-getting-started/
+
+2. Follow instructions to set up RTC: https://spellfoundry.com/docs/setting-up-the-real-time-clock-on-raspbian-jessie-or-stretch/
+
+3. Reset sleepypi using reset button (small black)
+
+**WARNING:** if programming sleepypi install power bypass, otherwise
+it will power off mid program and brick the arduino.
