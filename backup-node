@@ -3,27 +3,24 @@
 
 ADDR=$1
 
-logger "Backing up node: $ADDR";
-
-VIDDIR=~/$ADDR/Videos
-LOGDIR=~/$ADDR/log
+VIDDIR=$SAVEDIR/$ADDR/Videos
+LOGDIR=$SAVEDIR/$ADDR/log
 
 if [ ! -d "$LOGDIR" ];
 then
-    logger "Creating log backup dir: $LOGDIR"
-    mkdir -p $LOGDIR || logger "Failed to create $LOGDIR"
+    echo "Creating log backup dir: $LOGDIR"
+    mkdir -p $LOGDIR || echo "Failed to create $LOGDIR"
 fi
 
-rsync -a pi@$ADDR:/var/log/syslog $LOGDIR  || logger "Log sync failed: $ADDR"
+rsync -a pi@$ADDR:/var/log/syslog $LOGDIR &> /dev/null  || echo "ERROR: Log sync failed: $ADDR"
 
 if [ ! -d "$VIDDIR" ];
 then
-    logger "Creating video backup dir: $VIDDIR"
-    mkdir -p $VIDDIR || logger "Failed to create $VIDDIR"
+    echo "Creating video backup dir: $VIDDIR"
+    mkdir -p $VIDDIR || echo "Failed to create $VIDDIR"
 fi
 
+rsync -a pi@$ADDR:Videos/ $VIDDIR &> /dev/null || echo "ERROR: Video sync failed: $ADDR"
 
-rsync -a pi@$ADDR:Videos/ $VIDDIR || logger "Video sync failed: $ADDR"
 
-
-exit
+exit 0

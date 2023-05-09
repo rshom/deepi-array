@@ -1,0 +1,17 @@
+#!/bin/sh
+FILE=/sys/class/net/$1/operstate
+
+if [ -f "$FILE" ]; then
+    STATUS=$(cat $FILE)
+    # STATUS is likely but not definitely "up"
+else
+    STATUS="down"
+fi
+
+echo "INFO: iface $1: $STATUS"
+
+if [ "$STATUS" = "up" ]; then
+    return 0
+else
+    return 1
+fi
