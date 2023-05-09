@@ -338,3 +338,17 @@ pi@10.0.14.2:22
 
 **WARNING:** if programming sleepypi install power bypass, otherwise
 it will power off mid program and brick the arduino.
+
+
+4. Install arduino make file
+
+```
+sudo apt-get install arduino-mk
+```
+
+5. Fix confusing error. For some reason it looks for this file in the wrong location.
+
+```
+mkdir /usr/share/arduino/hardware/tools/avr/etc
+cp /etc/avrdude.conf /usr/share/arduino/hardware/tools/avr/
+```
