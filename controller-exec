@@ -4,6 +4,7 @@
 savedir=/mnt/usb1
 min_hd_space=$((1024*1024))	# 1 GB
 
+echo "INFO: Controller powered on"
 
 ifaceup () {
     file=/sys/class/net/$1/operstate
@@ -60,10 +61,23 @@ echo "INFO: Controller powered on"
 echo "INFO: Syncing time"	# TODO
 
 # Check network interfaces
-ifaceup usb1
-ifaceup usb2
-ifaceup usb3
-ifaceup usb4
+# ifaceup usb1
+# ifaceup usb2
+# ifaceup usb3
+# ifaceup usb4
+# ifaceup usb5
+# ifaceup usb6
+
+/home/pi/deepi-array/wait_for_connections || "Wait for connections script failed"
+
+# Check network interfaces
+# ifaceup usb1
+# ifaceup usb2
+# ifaceup usb3
+# ifaceup usb4
+# ifaceup usb5
+# ifaceup usb6
+
 
 # Check hard drive space
 if ! mountpoint -q $savedir
@@ -88,6 +102,7 @@ else
     do
 	if ifaceup usb$n
 	then
+        echo "INFO: Backing up 10.0.1$n.2"
 	    backup_node "10.0.1$n.2" || "ERROR: Back up 10.0.1$n.2 failed"
 	else
 	    echo "WARNING: Back up 10.0.1$n.2 skipped"
@@ -114,5 +129,7 @@ else
     echo "INFO: pi is not logged in"
 fi
 
-exit
+echo "INFO: controller-exec completed"
+
+exit 0
 

@@ -1,0 +1,37 @@
+#!/bin/bash
+# Establish connection and wait
+
+test_node () {
+    ping -q -c 1 -W 1 10.0.1$1.2 > /dev/null
+    # NOTE: kill SIGINT does not work during ping
+    return $?
+}
+
+test_all () {
+    all_up=0
+    any_up=1
+    for n in 1 2 3 4 5 6
+    do
+        if test_node $n
+        then
+            echo "DEBUG: deepi$n connected"
+            any_up=0
+        else
+            echo "WARNING: deepi$n no connected"
+            all_up=1
+        fi
+    done
+
+    return $any_up
+
+}
+
+while ! test_all
+do
+    echo "DEBUG: Waiting for connections"
+    echo "DEBUG: resetting USB hub"
+    sudo resethub
+    sleep 10
+done
+
+echo "INFO: Connection established"
