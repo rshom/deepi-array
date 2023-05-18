@@ -26,8 +26,14 @@ test_all () {
 
 }
 
-while ! test_all
+
+for n in 1 2 3 4 
 do
+    if test_all
+    then
+	echo "Nodes detected"
+	break
+    fi
     echo "DEBUG: Waiting for connections"
     echo "DEBUG: resetting USB hub"
     sudo resethub

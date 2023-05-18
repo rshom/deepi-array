@@ -83,6 +83,10 @@ else
     echo "INFO: pi is not logged in"
 fi
 
+fname=/home/pi/Videos/$(date -I'ns').h264
+echo "INFO: recording video to $fname"
+raspivid -o $fname -t 300000
+
 echo "INFO: node-exec completed"
 
 exit 0
