@@ -1,0 +1,36 @@
+#!/bin/bash
+
+echo "DEBUG: Resetting hub"
+echo 0 > /sys/bus/usb/devices/usb1/authorized || echo "ERROR: shutdown of usb 1 failed"
+echo 0 > /sys/bus/usb/devices/usb2/authorized || echo "ERROR: shutdown of usb 2 failed"
+sleep 1
+echo 1 > /sys/bus/usb/devices/usb1/authorized || echo "ERROR: startup usb 1 failed"
+echo 1 > /sys/bus/usb/devices/usb2/authorized || echo "ERROR: startup usb 2 failed"
+
+# ID=0525:a4a2
+
+# echo "DEBUG: Searching for $ID"
+# devPaths=`lsusb | grep $ID | sed -r 's/Bus ([0-9]{3}) Device ([0-9]{3}).*/bus\/usb\/\1\/\2/g;'`
+# for devPath in $devPaths; do
+#     echo "DEBUG: Found $ID @ $devPath"
+#     echo "DEBUG: Searching for sysPath"
+#     for sysPath in /sys/bus/usb/devices/*; do
+# 	#echo "DEBUG: $sysPath/uevent"
+# 	devName=`cat "$sysPath/uevent" | grep $devPath`
+# 	#echo "DEBUG: devName=$devName"
+# 	if [ ! -z $devName ] 
+# 	then
+#             break
+# 	fi
+#     done
+    
+#     if [ ! -z  $devName ] 
+#     then
+# 	echo "INFO: Found $ID @ $sysPath, Resetting"
+# 	echo 0 > $sysPath/authorized || echo "ERROR: failed to $ID @ $sysPath"
+# 	echo 1 > $sysPath/authorized || echo "ERROR: failed to $ID @ $sysPath"
+#     else
+# 	echo "ERROR: Could not find $ID"
+#     fi
+    
+# done
