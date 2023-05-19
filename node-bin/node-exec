@@ -65,28 +65,33 @@ else
     echo "WARNING: Time sync server down"
 fi
 
+fname=/home/pi/Videos/$(date -I'ns').h264
+echo "INFO: recording video to $fname"
+raspivid -o $fname -t 300000
+
+
+echo "INFO: node-exec completed"
+
+# Check if user is logged in
+# NOTE: should n`ot matter
+if who | grep -q "pi"
+then
+    echo "INFO: pi is logged in: Staying up"
+    exit 0
+else
+    echo "INFO: pi is not logged in"
+fi
 
 # Stay up if there is an outside connection
 ifaceup wlan0; wlan0_up=$1
 
 if  $wlan0_up 
 then
-    echo "INFO: Outside connection detected: do not quit"
-fi
-
-# Check if user is logged in
-# NOTE: should not matter
-if who | grep -q "pi"
-then
-    echo "INFO: pi is logged in"
+    echo "INFO: Outside connection detected: Staying up"
+    exit 0
 else
-    echo "INFO: pi is not logged in"
+    echo "INFO: No outside connection. Shutting down"
+    sudo shutdown now
 fi
-
-fname=/home/pi/Videos/$(date -I'ns').h264
-echo "INFO: recording video to $fname"
-raspivid -o $fname -t 300000
-
-echo "INFO: node-exec completed"
 
 exit 0

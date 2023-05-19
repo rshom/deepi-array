@@ -29,15 +29,18 @@ test_all () {
 
 for n in 1 2 3 4 
 do
+    echo "DEBUG: establishing nodes attempt $n"
     if test_all
     then
-	echo "Nodes detected"
-	break
+	    echo "DEBUG: Nodes detected"
+        echo "INFO: Connection established"
+	    exit 0
     fi
-    echo "DEBUG: Waiting for connections"
-    echo "DEBUG: resetting USB hub"
-    sudo resethub
-    sleep 10
+        echo "DEBUG: Waiting for connections"
+        echo "DEBUG: resetting USB hub"
+        sudo resethub
+        sleep 30
 done
 
-echo "INFO: Connection established"
+echo "ERROR: No connections established"
+exit 1
