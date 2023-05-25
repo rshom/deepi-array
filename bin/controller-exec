@@ -7,22 +7,25 @@ savedir=/mnt/usb1
 
 echo "INFO: Controller powered on"
 
+
 ifaceup () {
     file=/sys/class/net/$1/operstate
     
     if [ -f "$file" ]; then
-	status=$(cat $file)
-	# status is likely but not definitely "up"
+	    status=$(cat $file)
+	    # status is likely but not definitely "up"
+        # could be "unknown"
     else
-	status="down"
+        # if no file, it is "down"
+	    status="down"
     fi
     
     echo "INFO: iface $1: $status"
     
     if [ ! "$status" = "down" ]; then
-	return 0
+	    return 0
     else
-	return 1
+	    return 1
     fi
 }
 
@@ -49,8 +52,8 @@ backup_node () {
 	echo "DEBUG: $viddir exists"
     fi
     
-    rsync -v --timeout=20 -a pi@$1:logs/ $logdir 
-    rsync -v --timeout=20 -a pi@$1:Videos/ $viddir
+    rsync -v --timeout=20 -a pi@$1:logs/ $logdir || echo "ERROR: Back up $1 logs failed."
+    rsync -v --timeout=20 -a pi@$1:Videos/ $viddir || echo "ERROR: back up $1 videos failed."
 
     return $?
 }
@@ -59,12 +62,23 @@ backup_node () {
 # TODO: pipe to logger
 
 echo "INFO: Controller powered on"
+timedatectl status
 echo "INFO: Syncing time"	# TODO
+sudo hwclock -s || echo "ERROR: timesync failed"
+timedatectl status
 
 # Check network interfaces
-/home/pi/deepi-array/wait_for_connections || "Wait for connections script failed"
+echo "Waiting give time for nodes to boot up";
+sleep 30;
+sudo resethub || echo "ERROR: reset hub failed"
+/home/pi/deepi-array/bin/wait_for_connections || echo "ERROR: Wait for connections script failed"
+
+echo "Executing node commands"
+parallel-ssh -h ~/hosts.txt "sh /home/pi/node-exec | ts &> /home/pi/logs/$(date -I'ns').log"
 
 # Check hard drive space
+echo "INFO: mounting harddrive"
+sudo mount -a || echo "ERROR: harddrive failed to mount"
 if ! mountpoint -q $savedir
 then
     echo "WARNING: Hardrive not detected"
@@ -77,6 +91,9 @@ echo "INFO: backing up to $savedir"
 free_space=`df --output=avail $savedir | tail -n1`
 echo "INFO: Free space: $free_space ($((free_space/1024/1024)) GB)"
 
+
+echo "INFO: backing up controller logs"
+rsync -v --timeout=20 -a /home/pi/logs/ $savedir || echo "ERROR: back up of controller logs failed."
 
 # If space back up nodes
 if [ "$free_space" -lt "$min_hd_space" ]
@@ -101,27 +118,32 @@ else
 fi   
 
 # Stay up if there is an outside connection
-ifaceup eth0; eth0_up=$1
-ifaceup wlan0; wlan0_up=$1
+ifaceup eth0; eth0_up=$?
+ifaceup wlan0; wlan0_up=$?
 
 # Check if user is logged in
 # NOTE: should not matter
-if who | grep -q "pi"
-then
-    echo "INFO: pi is logged in: Staying up"
-    exit 0
-else
-    echo "INFO: pi is not logged in"
-fi
+# if who | grep -q "pi"
+# then
+#     echo "INFO: pi is logged in: Staying up"
+#     exit 0
+# else
+#     echo "INFO: pi is not logged in"
+# fi
 
 echo "INFO: controller-exec completed"
 
-if  $eth0_up || $wlan0_up 
+echo "DEBUG: wlan0: $wlan0_up";
+echo "DEBUG: eth0 : $eth0_up";
+
+if  [ $eth0_up -eq 0 ] ||  [ $wlan0_up -eq 0 ]
 then
     echo "INFO: Outside connection detected: Staying up"
     exit 0
 else
     echo "INFO: No outside connection. Shutting down"
+    parallel-ssh -h ~/hosts.txt "sudo shutdown now"
+    sleep 10 # give time to shutdown
     sudo shutdown now
 fi
 
