@@ -1,0 +1,5 @@
+echo "Enabling lights"
+echo "12" > /sys/class/gpio/export || echo "ERROR: failed to enable GPIO 12"
+echo "out" > /sys/class/gpio/gpio12/direction || echo "ERROR: failed to set GPIO 12 to output"
+echo "Turning on lights"
+echo "1" > /sys/class/gpio/gpio12/value || echo "ERROR: failed to set GPIO 12 high to turn on lights"

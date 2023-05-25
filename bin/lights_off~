@@ -1,0 +1,5 @@
+#!/bin/sh
+echo "Turning off lights"
+echo "0" > /sys/class/gpio/gpio12/value || echo "ERROR: failed to set GPIO 12 low to turn off lights"
+echo "12" > /sys/class/gpio/unexport || "ERROR: failed to clean up GPIO 12"
+

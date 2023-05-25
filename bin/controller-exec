@@ -1,12 +1,10 @@
 #!/bin/sh
 # Run through a series of autofunctions whenever the array is powered on
 
-
 min_hd_space=$((1024*1024))	# 1 GB
 savedir=/mnt/usb1
 
 echo "INFO: Controller powered on"
-
 
 ifaceup () {
     file=/sys/class/net/$1/operstate
@@ -67,14 +65,22 @@ echo "INFO: Syncing time"	# TODO
 sudo hwclock -s || echo "ERROR: timesync failed"
 timedatectl status
 
+
 # Check network interfaces
 echo "Waiting give time for nodes to boot up";
 sleep 30;
 sudo resethub || echo "ERROR: reset hub failed"
 /home/pi/deepi-array/bin/wait_for_connections || echo "ERROR: Wait for connections script failed"
 
+sudo /home/pi/deepi-array/bin/lights_on || echo "ERROR: failed to turn on lights"
+
 echo "Executing node commands"
-parallel-ssh -h ~/hosts.txt "sh /home/pi/node-exec | ts &> /home/pi/logs/$(date -I'ns').log"
+parallel-ssh -h /home/pi/hosts.txt "sh /home/pi/node-exec | ts &> /home/pi/logs/$(date -I'ns').log"
+
+sudo /home/pi/deepi-array/bin/lights_off || echo "ERROR: failed to turn off lights"
+
+
+
 
 # Check hard drive space
 echo "INFO: mounting harddrive"
@@ -142,7 +148,7 @@ then
     exit 0
 else
     echo "INFO: No outside connection. Shutting down"
-    parallel-ssh -h ~/hosts.txt "sudo shutdown now"
+    parallel-ssh -h /home/pi/hosts.txt "sudo shutdown now"
     sleep 10 # give time to shutdown
     sudo shutdown now
 fi
