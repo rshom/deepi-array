@@ -87,13 +87,13 @@ echo "DEBUG: wlan0: $wlan0_up";
 
 # Stay up if there is an outside connection
 
-if [ $wlan0_up -eq 0 ]
-then
-    echo "INFO: Outside connection detected: Staying up"
-    exit 0
-else
-    echo "INFO: No outside connection. Shutting down"
-    #sudo shutdown now
-fi
+# if [ $wlan0_up -eq 0 ]
+# then
+#     echo "INFO: Outside connection detected: Staying up"
+#     exit 0
+# else
+#     echo "INFO: No outside connection. Shutting down"
+#     #sudo shutdown now
+# fi
 
 exit 0
