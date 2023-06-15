@@ -40,8 +40,8 @@ const int LED_PIN = 13;
 // ++++++++++++++++++++ CHANGE ME ++++++++++++++++++
 uint8_t  WakeUp_StartMinute   = 5;   // Minutes 
 
-unsigned long    MAX_RPI_TIME_TO_STAY_AWAKE_MS  = 60000;       // in ms - so this is 60 seconds
-#define kPI_CURRENT_THRESHOLD_MA   110                         // Shutdown current threshold in mA. When the
+unsigned long    MAX_RPI_TIME_TO_STAY_AWAKE_MS  = 4*60000;       // in ms - so this is 60 seconds
+#define kPI_CURRENT_THRESHOLD_MA   500                         // Shutdown current threshold in mA. When the
                                                                // when the Rpi is below this, it is "shutdown"
                                                                // This will vary from Rpi model to Rpi model
                                                                // and you will need to fine tune it for each Rpi
@@ -156,13 +156,16 @@ void loop()
     }      
 
     // Start a shutdown
-    if(pi_running == true){
-        // Do a commanded shutdown
-        SleepyPi.piShutdown();      
-        SleepyPi.enableExtPower(false); 
-    }
-    else {
+    //if(pi_running == true){
+    //    // Do a commanded shutdown
+    //    Serial.println("Commanded shutdown");
+    //    SleepyPi.piShutdown();      
+    //    SleepyPi.enableExtPower(false); 
+    //}
+    
+    if(pi_running == false) {
         // Already shutdown so lets just cut the power
+        Serial.println("Shutdown, cutting power");
         SleepyPi.enablePiPower(false);
         SleepyPi.enableExtPower(false);
     }
@@ -318,4 +321,3 @@ void PrintRTCRegisters(void)
       Serial.println(reg_value,HEX);     
  
 }
-
