@@ -39,7 +39,7 @@ do
         echo "DEBUG: Waiting for connections"
         echo "DEBUG: resetting USB hub"
         sudo resethub
-        sleep 30
+        sleep 10;
 done
 
 echo "ERROR: No connections established"
