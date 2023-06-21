@@ -4,7 +4,7 @@
 echo "INFO: Controller powered on"
 
 min_hd_space=$((1024*1024))	# 1 GB
-savedir=/mnt/usb1
+savedir=/mnt/volume
 
 ifaceup () {
     file=/sys/class/net/$1/operstate
@@ -31,8 +31,8 @@ backup_node () {
 
     echo "INFO: backing up $1"
 
-    viddir=$savedir/$1/Videos
-    logdir=$savedir/$1/log
+    viddir=$savedir/$1/Videos/
+    logdir=$savedir/$1/logs/
     
     if [ ! -d "$logdir" ];
     then
@@ -50,8 +50,8 @@ backup_node () {
 	echo "DEBUG: $viddir exists"
     fi
     
-    rsync -v --timeout=20 -a pi@$1:logs/ $logdir || echo "ERROR: Back up $1 logs failed."
-    rsync -v --timeout=20 -a pi@$1:Videos/ $viddir || echo "ERROR: back up $1 videos failed."
+    rsync -vrltD --progress --stats --timeout=20 pi@$1:logs/*.log $logdir || echo "ERROR: Back up $1 logs failed."
+    rsync -vrltD --progress --stats --timeout=20 pi@$1:Videos/*.h264 $viddir || echo "ERROR: back up $1 videos failed."
 
     return $?
 }
@@ -67,13 +67,13 @@ timedatectl status
 echo "Waiting give time for nodes to boot up";
 sleep 20;
 sudo resethub || echo "ERROR: reset hub failed"
-sleep 10; 
+sleep 5; 
 /home/pi/deepi-array/bin/wait_for_connections || echo "ERROR: Wait for connections script failed"
 
 sudo /home/pi/deepi-array/bin/lights_on || echo "ERROR: failed to turn on lights"
 
 echo "INFO: Executing node commands"
-parallel-ssh -h /home/pi/hosts.txt "sh /home/pi/node-exec | ts &> /home/pi/logs/$(date -I'ns').log"
+parallel-ssh -h /home/pi/hosts.txt "sh /home/pi/node-exec | ts &> /home/pi/logs/$(date +%Y%m%d%H%M).log"
 
 sudo /home/pi/deepi-array/bin/lights_off || echo "ERROR: failed to turn off lights"
 
@@ -92,7 +92,7 @@ echo "INFO: Free space: $free_space ($((free_space/1024/1024)) GB)"
 
 
 echo "INFO: backing up controller logs"
-rsync -v --timeout=20 -a /home/pi/logs/ $savedir || echo "ERROR: back up of controller logs failed."
+rsync -vrltD --progress --stats --timeout=20 /home/pi/logs/ $savedir || echo "ERROR: back up of controller logs failed."
 
 # If space back up nodes
 if [ "$free_space" -lt "$min_hd_space" ]

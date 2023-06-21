@@ -65,7 +65,8 @@ else
     echo "WARNING: Time sync server down"
 fi
 
-fname=/home/pi/Videos/$(date -I'ns').h264
+fname=/home/pi/Videos/$(date +%Y%m%d%H%M).h264
+#fname=$(echo "$fname" | tr : -)	# get rid of special characters
 echo "INFO: recording video to $fname"
 raspivid -o $fname -t 30000
 
