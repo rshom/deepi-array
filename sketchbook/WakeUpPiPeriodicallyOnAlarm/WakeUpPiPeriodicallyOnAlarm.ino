@@ -38,9 +38,9 @@ const int LED_PIN = 13;
 
 // Globals
 // ++++++++++++++++++++ CHANGE ME ++++++++++++++++++
-uint8_t  WakeUp_StartMinute   = 5;   // Minutes 
+uint8_t  WakeUp_StartMinute   = 60;   // Minutes 
 
-unsigned long    MAX_RPI_TIME_TO_STAY_AWAKE_MS  = 4*60000;       // in ms - so this is 60 seconds
+unsigned long    MAX_RPI_TIME_TO_STAY_AWAKE_MS  = 15*60000;       // in ms - so this is 60 seconds
 #define kPI_CURRENT_THRESHOLD_MA   500                         // Shutdown current threshold in mA. When the
                                                                // when the Rpi is below this, it is "shutdown"
                                                                // This will vary from Rpi model to Rpi model
@@ -75,10 +75,10 @@ void setup()
   // Default the clock to the time this was compiled.
   // Comment out if the clock is set by other means
   // ...get the date and time the compiler was run
-  if (getDate(__DATE__) && getTime(__TIME__)) {
+  //if (getDate(__DATE__) && getTime(__TIME__)) {
       // and configure the RTC with this info
-      SleepyPi.setTime(DateTime(F(__DATE__), F(__TIME__)));
-  }  
+      //SleepyPi.setTime(DateTime(F(__DATE__), F(__TIME__)));
+  //}  
 
   printTimeNow();
   
@@ -100,16 +100,30 @@ void loop()
     attachInterrupt(0, alarm_isr, FALLING);   // Alarm pin
 
     SleepyPi.enableWakeupAlarm(true);
+
+    DateTime now = SleepyPi.readTime();
+    while(now.minute()==nextWakeTime)
+    {
+      Serial.println("Waiting to set alarm");
+      delay(10000);
+      now = SleepyPi.readTime();
+    }
     
     // Setup the Alarm Time 
     SleepyPi.setAlarm(nextWakeTime);     
+    Serial.print("Next wake time: ");
+    Serial.println(nextWakeTime);
     
     // PrintRTCRegisters();   // for debug
     
     delay(500);
 
+    
     // Enter power down state with ADC and BOD module disabled.
     // Wake up when wake up pin is low (which occurs when our alarm clock goes off)
+    Serial.println("Going to sleep");
+    digitalWrite(LED_PIN,LOW);    // Switch off LED 
+    delay(50);
     SleepyPi.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF); 
     
     // Disable external pin interrupt on wake up pin.
@@ -126,7 +140,6 @@ void loop()
     // Print the time
     printTimeNow();   
     delay(50);
-    digitalWrite(LED_PIN,LOW);    // Switch off LED 
 
     // Do something on the Rpi here
     // Example: Take a Picture
@@ -156,12 +169,12 @@ void loop()
     }      
 
     // Start a shutdown
-    //if(pi_running == true){
-    //    // Do a commanded shutdown
-    //    Serial.println("Commanded shutdown");
-    //    SleepyPi.piShutdown();      
-    //    SleepyPi.enableExtPower(false); 
-    //}
+    if(pi_running == true){
+        // Do a commanded shutdown
+        Serial.println("Commanded shutdown");
+        SleepyPi.piShutdown();      
+        SleepyPi.enableExtPower(false); 
+    }
     
     if(pi_running == false) {
         // Already shutdown so lets just cut the power

@@ -66,15 +66,16 @@ else
 fi
 
 fname=/home/pi/Videos/$(date +%Y%m%d%H%M).h264
-#fname=$(echo "$fname" | tr : -)	# get rid of special characters
 echo "INFO: recording video to $fname"
 raspivid -o $fname -t 30000
 
 
-echo "INFO: node-exec completed"
 
 ifaceup wlan0; wlan0_up=$?
 echo "DEBUG: wlan0: $wlan0_up";
+
+
+echo "INFO: node-exec completed"
 
 # Check if user is logged in
 # NOTE: should not matter
