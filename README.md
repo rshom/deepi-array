@@ -18,7 +18,7 @@
 > Bullseye. Except a solution in the future.
 
 ```
-git clone https://github.com/rshom/deepi-os
+git clone https://github.com/uril/deepi-os
 cd deepi-os
 sudo sh ./setup.sh
 sudo reboot now
