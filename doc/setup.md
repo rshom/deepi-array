@@ -72,13 +72,18 @@ static ip_address=10.0.14.1/24
 
 9. Set up IP forwarding
 
-```.bash
-sudo sysctl -w net.ipv4.ip_forward=1
+Edit /etc/sysctl.conf and search for the following lines:
+```
+# Uncomment the next line to enable packet forwarding for IPv4
+#net.ipv4.ip_forward=1
 ```
 
-Check if active w/ `sudo systemctl status sysctl` and start if not
-active. TODO: check this
+Uncomment net.ipv4.ip_forward=1:
 
+```
+# Uncomment the next line to enable packet forwarding for IPv4
+net.ipv4.ip_forward=1
+```
 
 
 10. Set up IP routing table
